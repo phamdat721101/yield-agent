@@ -36,3 +36,9 @@ web/out/
 # Misc
 *.log
 npm-debug.log*
+.context/secrets.md
+.context/legacy/
+
+# User Requests
+.context/
+.cursorrules
