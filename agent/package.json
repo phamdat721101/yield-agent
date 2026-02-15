@@ -1,0 +1,24 @@
+{
+  "name": "lion-heart-agent",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "start": "tsx gateway/server.ts",
+    "dev": "tsx watch gateway/server.ts",
+    "fetch-data": "tsx skills/market-research/scripts/fetch-defi-data.ts",
+    "sign-report": "tsx skills/trust-stamp/scripts/sign-report.ts",
+    "execute-tx": "tsx skills/wallet-control/scripts/execute-tx.ts"
+  },
+  "dependencies": {
+    "viem": "^2.21.0",
+    "dotenv": "^16.4.0",
+    "ws": "^8.18.0"
+  },
+  "devDependencies": {
+    "tsx": "^4.19.0",
+    "typescript": "^5.5.0",
+    "@types/node": "^22.0.0",
+    "@types/ws": "^8.5.0"
+  }
+}

@@ -1,0 +1,20 @@
+{
+  "name": "lion-heart",
+  "version": "0.1.0",
+  "private": true,
+  "description": "LionHeart: The Verifiable DeFi Mentor — Chat-first DeFi with on-chain agent identity",
+  "workspaces": [
+    "contracts",
+    "agent",
+    "web"
+  ],
+  "scripts": {
+    "test:contracts": "npm run test --workspace=contracts",
+    "build:contracts": "npm run compile --workspace=contracts",
+    "dev:web": "npm run dev --workspace=web",
+    "build:web": "npm run build --workspace=web"
+  },
+  "engines": {
+    "node": ">=20"
+  }
+}

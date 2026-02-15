@@ -1,0 +1,58 @@
+{
+  "name": "LionHeart",
+  "version": "0.1.0",
+  "description": "Verifiable DeFi Mentor — tutor, researcher, and portfolio manager",
+  "agent": {
+    "identity": {
+      "registry": "${IDENTITY_REGISTRY_ADDRESS}",
+      "agentId": "${AGENT_ID}",
+      "chain": "arbitrum-sepolia",
+      "rpc": "${ARBITRUM_SEPOLIA_RPC}"
+    },
+    "reputation": {
+      "registry": "${REPUTATION_REGISTRY_ADDRESS}",
+      "tradingThreshold": 100
+    },
+    "wallet": {
+      "privateKey": "${AGENT_PRIVATE_KEY}"
+    }
+  },
+  "skills": [
+    {
+      "name": "market-research",
+      "path": "./skills/market-research",
+      "trigger": "defi markets, protocols, tvl, chain analytics"
+    },
+    {
+      "name": "trust-stamp",
+      "path": "./skills/trust-stamp",
+      "trigger": "sign report, verify data, trust stamp"
+    },
+    {
+      "name": "daily-brief",
+      "path": "./skills/daily-brief",
+      "trigger": "daily brief, morning report",
+      "cron": "0 8 * * *"
+    },
+    {
+      "name": "tutor-mode",
+      "path": "./skills/tutor-mode",
+      "trigger": "teach, lesson, quiz, learn defi"
+    },
+    {
+      "name": "wallet-control",
+      "path": "./skills/wallet-control",
+      "trigger": "swap, deposit, withdraw, trade, execute",
+      "reputationGated": true,
+      "minScore": 100
+    }
+  ],
+  "gateway": {
+    "port": 18789,
+    "cors": ["*"],
+    "rateLimit": {
+      "windowMs": 60000,
+      "max": 30
+    }
+  }
+}

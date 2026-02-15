@@ -1,0 +1,38 @@
+node_modules/
+dist/
+.next/
+out/
+build/
+coverage/
+cache/
+artifacts/
+typechain-types/
+
+# Environment
+.env
+.env.local
+.env.production
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Hardhat
+contracts/cache/
+contracts/artifacts/
+contracts/typechain-types/
+contracts/ignition/deployments/
+
+# Next.js
+web/.next/
+web/out/
+
+# Misc
+*.log
+npm-debug.log*
