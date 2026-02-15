@@ -8,6 +8,7 @@ import { AgentTool } from "../lib/tools.js";
 import { NewsTool } from "../skills/news.js";
 import { VaultTool } from "../skills/vault.js";
 import { x402Middleware } from "./x402.js";
+import { GeminiService } from "../lib/gemini.js";
 
 // ── Legacy Imports (To be refactored later into Tools) ──
 import { fetchProtocols, filterByChain, topByTvl } from "../lib/defillama.js";
@@ -108,14 +109,23 @@ export async function routeMessage(
 
   // ── Fallback to Legacy Handlers ──
   // (Keeping existing logic for backward compatibility until fully migrated)
-  switch (skillName) {
-    case "market-research":
-      // ... original logic inline or abstracted ...
-      return handleLegacyMarketResearch(message);
-    case "tutor-mode":
-      return { response: "Tutor mode is being upgraded.", agentId: 1, skill: "tutor", timestamp: new Date().toISOString() };
-    default:
-      return { response: "I'm not sure how to handle that yet.", agentId: 1, skill: "unknown", timestamp: new Date().toISOString() };
+  // ── Smart Fallback (Gemini AI) ──
+  // If no specific keyword matched, let the AI handle it.
+  try {
+    const aiResponse = await GeminiService.generate(message);
+    return {
+      response: aiResponse,
+      agentId: 1,
+      skill: "ai-chat",
+      timestamp: new Date().toISOString()
+    };
+  } catch (err) {
+    return {
+      response: "I'm having trouble connecting to my AI brain right now.",
+      agentId: 1,
+      skill: "error",
+      timestamp: new Date().toISOString()
+    };
   }
 }
 

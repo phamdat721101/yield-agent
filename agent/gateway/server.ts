@@ -138,6 +138,12 @@ wss.on("connection", (ws: WebSocket) => {
 });
 
 // ── Start ────────────────────────────────────────────────────────
+import { db } from "../lib/db.js";
+import { startCron } from "../jobs/crawler.js";
+
+// Initialize Dependencies
+db.init();
+startCron();
 
 server.listen(PORT, "0.0.0.0", () => {
   console.log(`LionHeart Gateway running on http://0.0.0.0:${PORT}`);
