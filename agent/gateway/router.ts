@@ -7,8 +7,10 @@
 import { AgentTool } from "../lib/tools.js";
 import { NewsTool } from "../skills/news.js";
 import { VaultTool } from "../skills/vault.js";
+import { YieldHunterTool } from "../skills/yield-hunter.js";
 import { x402Middleware } from "./x402.js";
 import { GeminiService } from "../lib/gemini.js";
+import { memory } from "../lib/memory.js";
 
 // ── Legacy Imports (To be refactored later into Tools) ──
 import { fetchProtocols, filterByChain, topByTvl } from "../lib/defillama.js";
@@ -30,12 +32,17 @@ interface Context {
 // ── Tool Registry ──
 const tools: Record<string, AgentTool> = {
   "news-analytics": new NewsTool(),
-  "vault-manager": new VaultTool()
+  "vault-manager": new VaultTool(),
+  "yield-hunter": new YieldHunterTool()
 };
 
 // ── Skill Matcher Logic (Simple Keyword -> Tool Name) ──
 function matchSkill(message: string): string {
   const lc = message.toLowerCase();
+
+  // Yield Hunter (Core OpenClawd Feature)
+  if (lc.includes("yield") || lc.includes("apy") || lc.includes("hunt") || lc.includes("best rate"))
+    return "yield-hunter";
 
   // News & Analytics
   if (lc.includes("news") || lc.includes("sentiment") || lc.includes("market update"))
@@ -43,14 +50,14 @@ function matchSkill(message: string): string {
 
   // Vault Management
   if (lc.includes("vault") || lc.includes("balance") || lc.includes("rebalance"))
-    return "vault-manager"; // This maps to the Tool name
+    return "vault-manager";
 
   // Legacy Matchers
   if (lc.includes("brief") || lc.includes("summary")) return "daily-brief";
   if (lc.includes("teach") || lc.includes("quiz")) return "tutor-mode";
 
-  // Default to Market Research (Legacy Logic)
-  return "market-research"; // Default legacy fallback
+  // Default: let AI handle it
+  return "ai-fallback";
 }
 
 // ── Main Router ──
@@ -97,6 +104,7 @@ export async function routeMessage(
         timestamp: new Date().toISOString()
       };
     } catch (error: any) {
+      memory.append(`Tool error [${skillName}]: ${error.message}`);
       return {
         response: `Tool Execution Failed: ${error.message}`,
         agentId: 1,
@@ -107,10 +115,7 @@ export async function routeMessage(
     }
   }
 
-  // ── Fallback to Legacy Handlers ──
-  // (Keeping existing logic for backward compatibility until fully migrated)
   // ── Smart Fallback (Gemini AI) ──
-  // If no specific keyword matched, let the AI handle it.
   try {
     const aiResponse = await GeminiService.generate(message);
     return {

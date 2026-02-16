@@ -53,3 +53,42 @@ export function filterByChain(protocols: Protocol[], chain: string): Protocol[] 
 export function topByTvl(protocols: Protocol[], n: number): Protocol[] {
   return [...protocols].sort((a, b) => b.tvl - a.tvl).slice(0, n);
 }
+
+// ── Yields API ──────────────────────────────────────────────────
+
+const YIELDS_URL = "https://yields.llama.fi";
+
+export interface YieldPool {
+  pool: string;
+  chain: string;
+  project: string;
+  symbol: string;
+  tvlUsd: number;
+  apy: number | null;
+  apyBase: number | null;
+  apyReward: number | null;
+}
+
+export async function fetchYields(): Promise<YieldPool[]> {
+  const res = await fetch(`${YIELDS_URL}/pools`);
+  if (!res.ok) throw new Error(`DefiLlama /pools failed: ${res.status}`);
+  const json = await res.json();
+  return json.data ?? [];
+}
+
+export function filterYieldsByChain(pools: YieldPool[], chain: string): YieldPool[] {
+  const lc = chain.toLowerCase();
+  return pools.filter((p) => p.chain?.toLowerCase() === lc);
+}
+
+export function filterYieldsByAsset(pools: YieldPool[], asset: string): YieldPool[] {
+  const lc = asset.toLowerCase();
+  return pools.filter((p) => p.symbol?.toLowerCase().includes(lc));
+}
+
+export function topYieldsByApy(pools: YieldPool[], n: number): YieldPool[] {
+  return [...pools]
+    .filter((p) => p.apy != null && p.tvlUsd > 10_000)
+    .sort((a, b) => (b.apy ?? 0) - (a.apy ?? 0))
+    .slice(0, n);
+}

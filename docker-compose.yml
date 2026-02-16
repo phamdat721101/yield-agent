@@ -1,0 +1,13 @@
+services:
+  agent:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: lionheart_agent
+    ports:
+      - "18789:18789"
+    env_file:
+      - ./agent/.env
+    volumes:
+      - ./agent/memory.md:/app/agent/memory.md
+    restart: unless-stopped
