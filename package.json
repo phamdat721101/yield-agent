@@ -12,7 +12,8 @@
     "test:contracts": "npm run test --workspace=contracts",
     "build:contracts": "npm run compile --workspace=contracts",
     "dev:web": "npm run dev --workspace=web",
-    "build:web": "npm run build --workspace=web"
+    "build:web": "npm run build --workspace=web",
+    "dev:all": "./scripts/local-dev.sh"
   },
   "engines": {
     "node": ">=20"
