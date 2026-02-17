@@ -7,6 +7,7 @@ import {
     type YieldPool,
 } from "../lib/defillama.js";
 import { memory } from "../lib/memory.js";
+import { db } from "../lib/db.js";
 
 /**
  * Yield Hunter Tool — Core OpenClawd Feature
@@ -24,6 +25,21 @@ export class YieldHunterTool implements AgentTool {
         const asset = (input.asset || input.coin || "all").toUpperCase();
         const chain = "Arbitrum";
 
+        // DB-first: try scored pool snapshots
+        try {
+            const scored = await db.getTopOpportunities(asset === "ALL" ? undefined : asset, 5);
+            if (scored.length > 0) {
+                const report = this.formatScoredReport(scored, asset, chain);
+                memory.append(
+                    `Yield scan (scored): ${asset} on ${chain} — top score: ${scored[0].opp_score} (${scored[0].protocol})`
+                );
+                return report;
+            }
+        } catch {
+            // DB unavailable — fall through to live API
+        }
+
+        // Live fallback: fetch directly from DefiLlama
         try {
             const allPools = await fetchYields();
 
@@ -60,6 +76,28 @@ export class YieldHunterTool implements AgentTool {
                 details: err.message,
             };
         }
+    }
+
+    private formatScoredReport(rows: any[], asset: string, chain: string) {
+        return {
+            type: "Yield Report",
+            chain,
+            asset,
+            source: "scored",
+            timestamp: new Date().toISOString(),
+            opportunities: rows.map((r: any, i: number) => ({
+                rank: i + 1,
+                protocol: r.protocol,
+                pool: r.pool_name,
+                category: r.category,
+                tokens: r.tokens,
+                apy: r.apy_total != null ? `${Number(r.apy_total).toFixed(2)}%` : "N/A",
+                tvl: `$${(Number(r.tvl_usd) / 1e6).toFixed(2)}M`,
+                opportunityScore: Number(r.opp_score),
+                riskScore: Number(r.risk_score),
+            })),
+            summary: `Found ${rows.length} scored opportunities for ${asset} on ${chain}. Best: ${rows[0].protocol} (${rows[0].pool_name}) with score ${Number(rows[0].opp_score).toFixed(1)}.`,
+        };
     }
 
     private formatReport(pools: YieldPool[], asset: string, chain: string) {

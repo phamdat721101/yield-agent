@@ -12,14 +12,17 @@
     "@rainbow-me/rainbowkit": "^2.2.10",
     "@tanstack/react-query": "^5.90.21",
     "next": "16.1.6",
+    "pg": "^8.18.0",
     "react": "19.2.3",
     "react-dom": "19.2.3",
+    "recharts": "^3.7.0",
     "viem": "^2.45.3",
     "wagmi": "^3.4.3"
   },
   "devDependencies": {
     "@tailwindcss/postcss": "^4",
     "@types/node": "^20",
+    "@types/pg": "^8.16.0",
     "@types/react": "^19",
     "@types/react-dom": "^19",
     "eslint": "^9",

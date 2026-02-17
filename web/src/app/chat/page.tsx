@@ -1,5 +1,6 @@
 "use client";
 
+import Link from "next/link";
 import { ChatWindow } from "@/components/ChatWindow";
 import { WalletConnect } from "@/components/WalletConnect";
 import { useWallet } from "@/hooks/useWallet";
@@ -17,7 +18,15 @@ export default function ChatPage() {
           </div>
           <span className="text-sm font-semibold text-white">LionHeart</span>
         </div>
-        <WalletConnect />
+        <div className="flex items-center gap-3">
+          <Link
+            href="/dashboard"
+            className="rounded-lg border border-zinc-700 px-3 py-1.5 text-xs text-zinc-300 transition-colors hover:border-blue-500 hover:text-white"
+          >
+            Dashboard
+          </Link>
+          <WalletConnect />
+        </div>
       </header>
 
       {/* Chat area — always show chat, wallet is optional for testing */}

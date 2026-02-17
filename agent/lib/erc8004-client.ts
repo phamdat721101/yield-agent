@@ -91,6 +91,37 @@ export async function registerAgent(
   });
 }
 
+// --- AgentVault + YieldManager ---
+
+const VAULT_ABI = parseAbi([
+  "function deposit(address token, uint256 amount) external",
+  "function withdraw(address token, uint256 amount) external",
+  "function executePayment(address token, address to, uint256 amount, bytes32 metadataHash) external",
+  "function yieldManager() external view returns (address)",
+  "function AGENT_ROLE() external view returns (bytes32)",
+  "function hasRole(bytes32 role, address account) external view returns (bool)",
+]);
+
+const YIELD_MANAGER_ABI = parseAbi([
+  "function getBalance(address vault, address token) external view returns (uint256)",
+  "function principal(address, address) external view returns (uint256)",
+]);
+
+export async function getVaultBalance(
+  vaultAddress: Address,
+  yieldManagerAddress: Address,
+  tokenAddress: Address,
+  rpcUrl?: string
+) {
+  const client = getPublicClient(rpcUrl);
+  return client.readContract({
+    address: yieldManagerAddress,
+    abi: YIELD_MANAGER_ABI,
+    functionName: "getBalance",
+    args: [vaultAddress, tokenAddress],
+  });
+}
+
 // --- Reputation Registry ---
 
 export async function getReputationSummary(
