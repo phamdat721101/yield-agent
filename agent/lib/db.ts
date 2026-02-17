@@ -70,7 +70,7 @@ export const db = {
     },
 
     saveSnapshot: async (data: any) => {
-        return pool.query('INSERT INTO market_snapshots (data) VALUES ($1) RETURNING *', [data]);
+        return pool.query('INSERT INTO market_snapshots (data) VALUES ($1::jsonb) RETURNING *', [JSON.stringify(data)]);
     },
 
     saveInsight: async (title: string, content: string) => {
@@ -79,7 +79,7 @@ export const db = {
 
     saveArbitrumStats: async (protocols: any, yields: any) => {
         return pool.query(
-            'INSERT INTO arbitrum_stats (protocols, yields) VALUES ($1, $2) RETURNING *',
+            'INSERT INTO arbitrum_stats (protocols, yields) VALUES ($1::jsonb, $2::jsonb) RETURNING *',
             [JSON.stringify(protocols), JSON.stringify(yields)]
         );
     },

@@ -26,15 +26,27 @@ export function startCron() {
                 console.warn('[crawler] Yields fetch failed, continuing without:', err);
             }
 
-            // 3. Save Raw Snapshot
-            await db.saveSnapshot(arbitrumTop);
+            // 3. Sanitize data (strip huge DefiLlama fields to what dashboard needs)
+            const cleanProtocols = arbitrumTop.map((p: any) => ({
+                name: p.name, symbol: p.symbol, chain: p.chain,
+                tvl: p.tvl, change_1d: p.change_1d, change_7d: p.change_7d,
+                category: p.category,
+            }));
+            const cleanYields = arbitrumYields.map((y: any) => ({
+                project: y.project, symbol: y.symbol, chain: y.chain,
+                apy: y.apy, apyBase: y.apyBase, apyReward: y.apyReward,
+                tvlUsd: y.tvlUsd, pool: y.pool,
+            }));
+
+            // 4. Save Raw Snapshot
+            await db.saveSnapshot(cleanProtocols);
             console.log('[crawler] Snapshot saved.');
 
-            // 4. Save Merged Stats (protocols + yields)
-            await db.saveArbitrumStats(arbitrumTop, arbitrumYields);
+            // 5. Save Merged Stats (protocols + yields)
+            await db.saveArbitrumStats(cleanProtocols, cleanYields);
             console.log('[crawler] Arbitrum stats saved.');
 
-            // 4b. Run protocol connectors → score → save pool snapshots
+            // 6. Run protocol connectors → score → save pool snapshots
             try {
                 const pools = await runAllConnectors();
                 const scored = scorePools(pools);
@@ -45,7 +57,7 @@ export function startCron() {
                 console.warn('[crawler] Connector pipeline failed, continuing:', connErr.message);
             }
 
-            // 5. Generate Insight (enriched with top scored opportunities)
+            // 7. Generate Insight (enriched with top scored opportunities)
             let topOpportunities: any[] = [];
             try {
                 topOpportunities = await db.getTopOpportunities(undefined, 5);
@@ -53,11 +65,11 @@ export function startCron() {
             const mergedData = { protocols: arbitrumTop, yields: arbitrumYields, topOpportunities };
             const report = await GeminiService.generateInsight(mergedData);
 
-            // 6. Save Insight
+            // 8. Save Insight
             await db.saveInsight("6-Hour Market Update", report);
             console.log('[crawler] Insight generated & saved.');
 
-            // 7. Send notification if configured
+            // 9. Send notification if configured
             const notifier = createNotifier();
             if (notifier) {
                 const topGainers = arbitrumTop
