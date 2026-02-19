@@ -4,6 +4,7 @@ import { TrustStampTool } from "./trust-stamp.js";
 import { GeminiService } from "../lib/gemini.js";
 import { sha256 } from "../lib/ipfs.js";
 import { memory } from "../lib/memory.js";
+import { db } from "../lib/db.js";
 
 /**
  * Daily Brief Tool — composite report combining market research + AI summary + trust stamp
@@ -32,12 +33,19 @@ export class DailyBriefTool implements AgentTool {
                 .map((r) => r.summary || "No data")
                 .join("\n\n");
 
-            // 3. Generate AI analysis
+            // 3. Generate narration via Yield Sentry persona
+            let topOpportunities: any[] = [];
+            try {
+                topOpportunities = await db.getTopOpportunities(undefined, 5);
+            } catch { /* ignore */ }
+
             let aiSummary: string;
             try {
-                aiSummary = await GeminiService.generate(
-                    `You are a DeFi analyst. Write a concise daily brief (3-4 paragraphs) based on this data:\n\n${chainSummaries}\n\nInclude: key observations, notable changes, and one actionable insight.`
-                );
+                const yieldChanges = reports
+                    .filter((r) => !r.error)
+                    .map((r) => ({ chain: r.chain, data: r.summary }));
+                aiSummary = await GeminiService.generateNarration(yieldChanges, topOpportunities);
+                await db.saveNarration(aiSummary, yieldChanges);
             } catch {
                 aiSummary =
                     "AI analysis unavailable. See raw data below.";

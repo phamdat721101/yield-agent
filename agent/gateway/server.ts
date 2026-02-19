@@ -59,7 +59,7 @@ const server = createServer(async (req, res) => {
   if (url.pathname === "/health" && req.method === "GET") {
     json(res, 200, {
       status: "ok",
-      agent: "LionHeart",
+      agent: "Yield Sentry",
       uptime: process.uptime(),
       timestamp: new Date().toISOString(),
     });
@@ -132,7 +132,7 @@ wss.on("connection", (ws: WebSocket) => {
     JSON.stringify({
       type: "text",
       content:
-        "Connected to LionHeart Agent. I'm your verifiable DeFi mentor. Ask me about markets, learn DeFi concepts, or request a daily brief.",
+        "Yield Sentry online. I watch stablecoins 24/7 on Arbitrum. Ask about markets, check yields, or get your reality report.",
     })
   );
 });

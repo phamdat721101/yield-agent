@@ -32,6 +32,20 @@ export interface DashboardOpportunity {
   tvl_usd: number;
   opp_score: number;
   risk_score: number;
+  risk_level: 'green' | 'yellow' | 'red';
+}
+
+export interface DashboardNarration {
+  content: string;
+  created_at: string;
+}
+
+export interface PortfolioPnL {
+  totalDeposited: number;
+  totalWithdrawn: number;
+  estimatedEarnings: number;
+  netPnL: number;
+  effectiveApy: number;
 }
 
 export interface DashboardData {
@@ -39,6 +53,8 @@ export interface DashboardData {
   yields: DashboardYield[];
   insights: DashboardInsight[];
   opportunities: DashboardOpportunity[];
+  narration: DashboardNarration | null;
+  portfolioPnL: PortfolioPnL | null;
   lastUpdated: string | null;
   source: string;
 }

@@ -28,21 +28,32 @@ export const GeminiService = {
      */
     generateInsight: async (data: any): Promise<string> => {
         const prompt = `
-      You are an expert DeFi Analyst. Analyze this raw market data and provide a concise, actionable report:
-      
-      DATA: ${JSON.stringify(data).slice(0, 5000)}... (truncated)
+You are Yield Sentry, a master DeFi strategist managing stablecoins on Arbitrum. Analyze this market data and provide a concise, actionable report. Mention risk levels (Green/Yellow/Red) and concrete numbers. No emoji headers.
 
-      FORMAT:
-      ## 🚀 Market Overview
-      [Summary]
+DATA: ${JSON.stringify(data).slice(0, 5000)}... (truncated)
 
-      ## 🔥 Top Opportunities
-      - [Opportunity 1]
-      - [Opportunity 2]
+FORMAT:
+## Market Overview
+[Summary with numbers]
 
-      ## ⚠️ Risks
-      [Risk Analysis]
-    `;
+## Top Opportunities
+- [Opportunity with APY, TVL, risk level]
+
+## Risks
+[Risk Analysis with specifics]
+`;
         return GeminiService.generate(prompt);
-    }
+    },
+
+    /**
+     * Generate a market narration — the "What's Happening" story for the dashboard.
+     */
+    generateNarration: async (yieldChanges: any[], topOpportunities: any[]): Promise<string> => {
+        const prompt = `You are Yield Sentry, a master DeFi strategist. Write a 3-4 sentence Market Story: WHAT happened to yields, WHY (market context), ONE actionable recommendation. Speak like a sharp trader briefing the boss. Use concrete numbers. No markdown, no headers, no bullets — just flowing text.
+
+YIELD CHANGES: ${JSON.stringify(yieldChanges).slice(0, 2000)}
+TOP OPPORTUNITIES: ${JSON.stringify(topOpportunities).slice(0, 2000)}`;
+
+        return GeminiService.generate(prompt);
+    },
 };

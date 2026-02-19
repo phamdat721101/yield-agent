@@ -14,9 +14,9 @@ const geistMono = Geist_Mono({
 });
 
 export const metadata: Metadata = {
-  title: "LionHeart — Verifiable DeFi Mentor",
+  title: "Yield Sentry — AI Yield Manager on Arbitrum",
   description:
-    "Chat-first DeFi application with verifiable AI agent identity, reputation scoring, and portfolio management on Arbitrum.",
+    "Hire an AI employee that watches your stablecoins 24/7 and moves them to the highest safe yield on Arbitrum.",
 };
 
 export default function RootLayout({

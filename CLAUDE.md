@@ -72,11 +72,15 @@ The gateway (`agent/gateway/`) is an HTTP + WebSocket server (port 18789) that r
 | `daily-brief` | brief, morning, daily | Composite report: market-research across chains + trust-stamp |
 | `tutor-mode` | teach, lesson, learn, quiz | DeFi curriculum (lessons 1-3 free, 4-8 premium via x402 payment gate) |
 | `wallet-control` | swap, trade, deposit, withdraw | Reputation-gated (score >= 100) transaction execution with simulation |
+| `yield-hunter` | yield, apy, hunt, best rate | Finds top APY opportunities on Arbitrum for specific assets |
+| `news-analytics`| news, sentiment, market update | Fetches crypto news from CryptoPanic and analyzes sentiment |
+| `vault-manager` | vault, balance, rebalance | Manages AgentVault assets and checks health |
 
 **Helper libraries** (`agent/lib/`):
 - `erc8004-client.ts` — viem-based wrapper for IdentityRegistry + ReputationRegistry reads/writes
 - `defillama.ts` — DefiLlama API client (fetchProtocols, filterByChain, topByTvl)
 - `ipfs.ts` — IPFS pinning via web3.storage with mock mode (`IPFS_MOCK=true`)
+- `memory.ts` — File-based persistent memory system (`agent/memory.md`) that records agent learnings and interactions.
 
 ### Web Frontend
 

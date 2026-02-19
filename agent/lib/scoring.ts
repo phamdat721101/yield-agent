@@ -4,6 +4,14 @@
  * opp_score = apyPoints + tvlPoints - riskPenalty   (0-100 scale)
  */
 
+export type RiskLevel = 'green' | 'yellow' | 'red';
+
+export function classifyRisk(score: number): RiskLevel {
+  if (score < 25) return 'green';
+  if (score < 50) return 'yellow';
+  return 'red';
+}
+
 export interface PoolSnapshot {
   protocol: string;
   pool_id: string;
@@ -20,9 +28,10 @@ export interface PoolSnapshot {
 export interface ScoredPool extends PoolSnapshot {
   risk_score: number;
   opp_score: number;
+  risk_level: RiskLevel;
 }
 
-function computeRiskScore(pool: PoolSnapshot): number {
+export function computeRiskScore(pool: PoolSnapshot, tokenRiskPoints = 0): number {
   const apy = pool.apy_total ?? 0;
   const tvl = pool.tvl_usd;
   const cat = pool.category.toLowerCase();
@@ -45,6 +54,9 @@ function computeRiskScore(pool: PoolSnapshot): number {
   else if (cat === 'dex') score += 10;
   else if (cat === 'lending') score += 5;
 
+  // GoPlus token risk (0-40 from external API)
+  score += tokenRiskPoints;
+
   return Math.min(100, score);
 }
 
@@ -63,6 +75,7 @@ export function scorePool(pool: PoolSnapshot): ScoredPool {
     ...pool,
     risk_score: Math.round(riskScore * 100) / 100,
     opp_score: Math.round(oppScore * 100) / 100,
+    risk_level: classifyRisk(riskScore),
   };
 }
 

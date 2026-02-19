@@ -100,24 +100,37 @@ export function OnboardingFlow({
                 {address}
               </p>
             </div>
+
+            {/* Primary Action: Start Chatting */}
             <button
-              onClick={() =>
-                writeContract({
-                  address: IDENTITY_REGISTRY_ADDRESS,
-                  abi: IDENTITY_REGISTRY_ABI,
-                  functionName: "register",
-                  args: [DEFAULT_AGENT_URI],
-                })
-              }
-              disabled={isWriting || isConfirming}
-              className="w-full rounded-xl bg-blue-600 px-8 py-3 text-sm font-medium text-white transition-colors hover:bg-blue-500 disabled:opacity-40"
+              onClick={onComplete}
+              className="w-full rounded-xl bg-blue-600 px-8 py-3 text-sm font-medium text-white transition-colors hover:bg-blue-500 shadow-lg shadow-blue-900/20"
             >
-              {isWriting
-                ? "Confirm in wallet..."
-                : isConfirming
-                  ? "Minting..."
-                  : "Mint Agent Identity NFT"}
+              Start Chatting
             </button>
+
+            {/* Optional: Mint Identity */}
+            <div className="pt-2 border-t border-zinc-900">
+              <p className="mb-2 text-xs text-zinc-500">Optional: Create on-chain agent identity</p>
+              <button
+                onClick={() =>
+                  writeContract({
+                    address: IDENTITY_REGISTRY_ADDRESS,
+                    abi: IDENTITY_REGISTRY_ABI,
+                    functionName: "register",
+                    args: [DEFAULT_AGENT_URI],
+                  })
+                }
+                disabled={isWriting || isConfirming}
+                className="w-full rounded-xl border border-zinc-800 bg-zinc-900 px-8 py-3 text-sm font-medium text-zinc-300 transition-colors hover:bg-zinc-800 hover:text-white disabled:opacity-40"
+              >
+                {isWriting
+                  ? "Confirm in wallet..."
+                  : isConfirming
+                    ? "Minting..."
+                    : "Mint Agent Identity NFT"}
+              </button>
+            </div>
           </div>
         )}
       </div>

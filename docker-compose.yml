@@ -11,3 +11,20 @@ services:
     volumes:
       - ./agent/memory.md:/app/agent/memory.md
     restart: unless-stopped
+    depends_on:
+      - db
+
+  db:
+    image: postgres:16
+    container_name: lionheart_db
+    environment:
+      POSTGRES_USER: lionheart
+      POSTGRES_PASSWORD: password
+      POSTGRES_DB: lionheart
+    ports:
+      - "5433:5432"
+    volumes:
+      - db_data:/var/lib/postgresql/data
+
+volumes:
+  db_data:

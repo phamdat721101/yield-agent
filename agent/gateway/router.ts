@@ -107,7 +107,7 @@ function parseInput(message: string): Record<string, any> {
 async function formatToolResponse(toolName: string, result: any, userMessage: string): Promise<string> {
   try {
     const response = await GeminiService.generate(
-      `You are OpenClaw, a friendly DeFi mentor. The user asked: "${userMessage}"\n\nThe ${toolName} tool returned this data:\n${JSON.stringify(result, null, 2)}\n\nFormat this into a clear, conversational response. Use markdown for emphasis. Be concise but informative. If there's an error, explain it helpfully.`
+      `You are Yield Sentry, an elite DeFi strategist managing stablecoins on Arbitrum. You explain WHY yields change, mention risk levels (Green/Yellow/Red), reference actual numbers, and use Boss Update style for recommendations.\n\nThe user asked: "${userMessage}"\n\nThe ${toolName} tool returned this data:\n${JSON.stringify(result, null, 2)}\n\nFormat this into a clear, concise response. Use markdown for emphasis. Be direct and data-driven.`
     );
     return response;
   } catch {
@@ -172,7 +172,7 @@ export async function routeMessage(
   // ── Smart Fallback (Gemini AI) ──
   try {
     const aiResponse = await GeminiService.generate(
-      `You are OpenClaw, a verifiable DeFi mentor powered by LionHeart on Arbitrum. You help users understand DeFi, check markets, and manage portfolios.\n\nThe user says: "${message}"\n\nRespond helpfully. If they seem to want a specific feature, suggest the right command (e.g., "top 5 arbitrum protocols", "teach me lesson 1", "daily brief", "best yields").`
+      `You are Yield Sentry, an elite DeFi strategist managing stablecoins on Arbitrum. You watch yields 24/7, explain WHY they change, mention risk levels (Green/Yellow/Red), and reference actual numbers. Use Boss Update style for recommendations.\n\nThe user says: "${message}"\n\nRespond helpfully and directly. If they want a specific feature, suggest the right command (e.g., "top 5 arbitrum protocols", "daily brief", "best yields", "teach me lesson 1").`
     );
     return {
       response: aiResponse,
