@@ -13,6 +13,7 @@ import { TrustStampTool } from "../skills/trust-stamp.js";
 import { DailyBriefTool } from "../skills/daily-brief.js";
 import { TutorModeTool } from "../skills/tutor-mode.js";
 import { WalletControlTool } from "../skills/wallet-control.js";
+import { RegisterAgentTool } from "../skills/register-agent.js";
 import { x402Middleware } from "./x402.js";
 import { GeminiService } from "../lib/gemini.js";
 import { memory } from "../lib/memory.js";
@@ -28,6 +29,7 @@ export interface AgentResponse {
 interface Context {
   walletAddress?: string;
   agentId?: number;
+  userLevel?: string;
 }
 
 // ── Tool Registry ──
@@ -40,11 +42,19 @@ const tools: Record<string, AgentTool> = {
   "news-analytics": new NewsTool(),
   "vault-manager": new VaultTool(),
   "yield-hunter": new YieldHunterTool(),
+  "register-agent": new RegisterAgentTool(),
 };
 
 // ── Skill Matcher Logic (Keyword -> Tool Name) ──
 function matchSkill(message: string): string {
   const lc = message.toLowerCase();
+
+  // HTML Dashboard / Yield Visualization (check before market-research)
+  if (
+    lc.includes("show me") || lc.includes("visualize") ||
+    (lc.includes("build") && lc.includes("dashboard")) ||
+    lc.includes("generate report") || lc.includes("html dashboard")
+  ) return "yield-hunter";
 
   // Market Research
   if (lc.includes("tvl") || lc.includes("protocol") || lc.includes("defi") || lc.includes("arbitrum"))
@@ -74,6 +84,11 @@ function matchSkill(message: string): string {
   if (lc.includes("news") || lc.includes("sentiment") || lc.includes("market update"))
     return "news-analytics";
 
+  // Register Agent (ERC-8004 mint)
+  if (lc.includes("register") || lc.includes("mint") || lc.includes("identity") ||
+      lc.includes("hire") || lc.includes("nft") || lc.includes("on-chain identity"))
+    return "register-agent";
+
   // Vault Management
   if (lc.includes("vault") || lc.includes("balance") || lc.includes("rebalance") || lc.includes("treasury"))
     return "vault-manager";
@@ -83,12 +98,16 @@ function matchSkill(message: string): string {
 }
 
 /** Parse basic input hints from user message */
-function parseInput(message: string): Record<string, any> {
+function parseInput(message: string, context?: Context): Record<string, any> {
   const lc = message.toLowerCase();
+  const wantsHtml = lc.includes("show me") || lc.includes("visualize")
+    || (lc.includes("build") && lc.includes("dashboard"))
+    || lc.includes("generate report") || lc.includes("html dashboard");
   return {
     message,
     coin: message.match(/BTC|ETH|SOL|ARB|USDC|USDT|WBTC/i)?.[0]?.toUpperCase(),
-    chain: lc.match(/(?:on\s+)?(\w+)(?:\s+chain)?/)?.[1],
+    chain: lc.match(/\bon\s+(arbitrum|ethereum|base|optimism|polygon)\b/)?.[1]
+      ?? lc.match(/\b(arbitrum|ethereum|base|optimism|polygon)\b/)?.[1],
     top: parseInt(lc.match(/top\s+(\d+)/)?.[1] || "5", 10),
     lesson: parseInt(lc.match(/lesson\s*(\d+)/)?.[1] || "0", 10) || undefined,
     action: lc.includes("rebalance") ? "rebalance"
@@ -100,14 +119,49 @@ function parseInput(message: string): Record<string, any> {
       : "check",
     asset: message.match(/BTC|ETH|SOL|ARB|USDC|USDT|WBTC/i)?.[0]?.toUpperCase() || "all",
     dataHash: lc.match(/(?:hash[:\s]+)([a-f0-9:]+)/)?.[1],
+    mode: wantsHtml ? "html" : undefined,
+    userLevel: context?.userLevel,
   };
 }
 
-/** Use Gemini to format raw tool output into readable text */
+/** Use Gemini to format raw tool output into readable text.
+ *  If result is an HTML dashboard or mint action, pass message through unchanged. */
 async function formatToolResponse(toolName: string, result: any, userMessage: string): Promise<string> {
+  if (result?.type === "html") return result.content;
+  if (result?.type === "mint-erc8004") return result.message;
   try {
     const response = await GeminiService.generate(
-      `You are Yield Sentry, an elite DeFi strategist managing stablecoins on Arbitrum. You explain WHY yields change, mention risk levels (Green/Yellow/Red), reference actual numbers, and use Boss Update style for recommendations.\n\nThe user asked: "${userMessage}"\n\nThe ${toolName} tool returned this data:\n${JSON.stringify(result, null, 2)}\n\nFormat this into a clear, concise response. Use markdown for emphasis. Be direct and data-driven.`
+      `You are OpenClaw, LionHeart's verifiable DeFi agent on Arbitrum. Master DeFi Strategist with deep protocol knowledge.
+
+PROTOCOL KNOWLEDGE:
+- Aave V3: Blue-chip lending, USDC/USDT 3–6% APY, $8B TVL. Green tier.
+- Morpho: P2P optimizer over Aave. Same safety, +1–2% when matched. Green tier.
+- Dolomite: Isolated margin lending, 5–12% USDC APY. Yellow tier.
+- Pendle: Yield tokenization (PT=fixed rate, YT=variable). Rate-lock strategy. Yellow tier.
+- Curve: Stablecoin DEX, CRV+fee rewards, 2–5% on 3pool/USDC pools. Yellow tier.
+- Balancer: Weighted pools, BAL rewards, variable APY 3–15%. Yellow tier.
+- Camelot: Arbitrum-native DEX, GRAIL incentives, IL risk on volatile pairs. Yellow tier.
+- Radiant: Cross-chain lending, RDNT emissions with inflation risk. Yellow tier.
+- GMX V2: Perps DEX, GLP 15–30% from trading fees, exposed to trader PnL. Red tier.
+- Jones DAO: Leveraged yield strategies on Arbitrum, JONES incentives, 8–25%. Red tier.
+
+RISK TIERS: Green = audited, >$100M TVL, stablecoins. Yellow = medium TVL, IL or token risk. Red = high leverage, volatile, <$10M TVL.
+
+STRATEGY PLAYBOOKS:
+- Newbie: USDC into Aave V3 or Morpho. 3–6% APY, minimal risk.
+- Intermediate: Split USDC between Aave (safe base) + Pendle PT (fixed higher rate). Use Curve for stable-stable LP.
+- Advanced: Loop wstETH on Dolomite (borrow USDC, re-deposit). Delta-neutral GMX GLP hedge with perp short.
+
+RULES:
+1. Cite specific APY ranges and TVL numbers from the data.
+2. Classify every opportunity Green/Yellow/Red with one-line rationale.
+3. Boss Update style: direct, specific, no filler. Max 3 sentences per point.
+4. Explain WHY yields change (incentive programs, TVL drops, demand shifts).
+5. End with ONE actionable recommendation: protocol + pool + expected APY range.
+
+The user asked: "${userMessage}"
+The ${toolName} tool returned: ${JSON.stringify(result, null, 2)}
+Format into a crisp, data-backed markdown response.`
     );
     return response;
   } catch {
@@ -146,7 +200,7 @@ export async function routeMessage(
 
     // 3. Execute Tool
     try {
-      const input = parseInput(message);
+      const input = parseInput(message, ctx);
       const result = await tool.execute(input, ctx);
       const formattedResponse = await formatToolResponse(tool.name, result, message);
 
@@ -172,7 +226,16 @@ export async function routeMessage(
   // ── Smart Fallback (Gemini AI) ──
   try {
     const aiResponse = await GeminiService.generate(
-      `You are Yield Sentry, an elite DeFi strategist managing stablecoins on Arbitrum. You watch yields 24/7, explain WHY they change, mention risk levels (Green/Yellow/Red), and reference actual numbers. Use Boss Update style for recommendations.\n\nThe user says: "${message}"\n\nRespond helpfully and directly. If they want a specific feature, suggest the right command (e.g., "top 5 arbitrum protocols", "daily brief", "best yields", "teach me lesson 1").`
+      `You are OpenClaw, LionHeart's DeFi agent on Arbitrum. Deep knowledge of Aave V3, Morpho, Dolomite, Pendle, Curve, Balancer, Camelot, GMX V2, Jones DAO, Radiant. Risk tiers: Green (safe, >$100M TVL), Yellow (medium, IL/token risk), Red (high leverage/inflation risk).
+
+Adapt to user level: Newbie = no jargon, recommend Aave/Morpho only. Intermediate = explain IL, delta neutral, leverage with numbers. Advanced = rate arbitrage, loops, cross-protocol optimization.
+
+Strategy playbooks: Newbie → USDC into Aave V3 3–6%. Intermediate → Aave base + Pendle PT fixed rate + Curve stable LP. Advanced → wstETH loop on Dolomite + delta-neutral GMX hedge.
+
+Boss Update style: direct, specific, actionable. No fluff.
+
+The user says: "${message}"
+Suggest commands if relevant: "find best USDC yields", "top 5 arbitrum protocols", "daily brief", "teach me lesson 1", "latest news", "register my agent".`
     );
     return {
       response: aiResponse,
