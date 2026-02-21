@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 
 const GATEWAY_URL =
-  process.env.OPENCLAW_GATEWAY_URL || "http://localhost:18789";
+  process.env.NEXT_PUBLIC_GATEWAY_URL || "http://localhost:18789";
 const MOCK_ENABLED = process.env.MOCK_AGENT === "true";
 
 export async function POST(req: NextRequest) {

@@ -110,8 +110,7 @@ export function useAgent(walletAddress?: string, userLevel?: string) {
 
       if (AGENT_MODE === "http") {
         try {
-          const gatewayUrl = process.env.NEXT_PUBLIC_GATEWAY_URL || "http://localhost:18789";
-          const res = await fetch(`${gatewayUrl}/chat`, {
+          const res = await fetch("/api/agent", {
             method: "POST",
             headers: { "Content-Type": "application/json" },
             body: JSON.stringify({ message: content, walletAddress, agentId: 1, userLevel }),
