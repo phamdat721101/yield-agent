@@ -4,12 +4,19 @@ import { useState, useRef, useEffect } from "react";
 import { useAgent } from "@/hooks/useAgent";
 import { MessageBubble } from "./MessageBubble";
 import { TrustBadge } from "./TrustBadge";
+import type { UserProfile } from "./OnboardingFlow";
 
 const AGENT_ID = Number(process.env.NEXT_PUBLIC_AGENT_ID || "1");
 
-export function ChatWindow({ walletAddress }: { walletAddress?: string }) {
+export function ChatWindow({
+  walletAddress,
+  userProfile,
+}: {
+  walletAddress?: string;
+  userProfile?: UserProfile | null;
+}) {
   const { messages, isLoading, isConnected, connect, sendMessage } =
-    useAgent(walletAddress);
+    useAgent(walletAddress, userProfile?.userLevel);
   const [input, setInput] = useState("");
   const scrollRef = useRef<HTMLDivElement>(null);
 
@@ -72,6 +79,7 @@ export function ChatWindow({ walletAddress }: { walletAddress?: string }) {
               </p>
               <div className="flex flex-wrap justify-center gap-2">
                 {[
+                  "Show me yield opportunities",
                   "Top Arbitrum protocols",
                   "Teach me about DeFi",
                   "Today's brief",
@@ -90,7 +98,7 @@ export function ChatWindow({ walletAddress }: { walletAddress?: string }) {
         )}
 
         {messages.map((msg) => (
-          <MessageBubble key={msg.id} message={msg} />
+          <MessageBubble key={msg.id} message={msg} walletAddress={walletAddress} />
         ))}
 
         {isLoading && (

@@ -6,7 +6,7 @@ const MOCK_ENABLED = process.env.MOCK_AGENT === "true";
 
 export async function POST(req: NextRequest) {
   const body = await req.json();
-  const { message, walletAddress, agentId } = body;
+  const { message, walletAddress, agentId, userLevel } = body;
 
   if (!message) {
     return NextResponse.json({ error: "message is required" }, { status: 400 });
@@ -28,6 +28,7 @@ export async function POST(req: NextRequest) {
         message,
         walletAddress,
         agentId: agentId || 1,
+        userLevel,
       }),
     });
 

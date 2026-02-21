@@ -1,12 +1,27 @@
 "use client";
 
+import { useEffect, useState } from "react";
 import Link from "next/link";
 import { ChatWindow } from "@/components/ChatWindow";
 import { WalletConnect } from "@/components/WalletConnect";
 import { useWallet } from "@/hooks/useWallet";
+import type { UserProfile } from "@/components/OnboardingFlow";
 
 export default function ChatPage() {
   const { address, isConnected } = useWallet();
+  const [userProfile, setUserProfile] = useState<UserProfile | null>(null);
+
+  useEffect(() => {
+    if (typeof window === "undefined") return;
+    const stored = localStorage.getItem("userProfile");
+    if (stored) {
+      try {
+        setUserProfile(JSON.parse(stored));
+      } catch {
+        // Ignore malformed data
+      }
+    }
+  }, []);
 
   return (
     <div className="flex h-screen flex-col bg-zinc-950">
@@ -20,6 +35,12 @@ export default function ChatPage() {
         </div>
         <div className="flex items-center gap-3">
           <Link
+            href="/dashboards"
+            className="rounded-lg border border-zinc-700 px-3 py-1.5 text-xs text-zinc-300 transition-colors hover:border-blue-500 hover:text-white"
+          >
+            My Dashboards
+          </Link>
+          <Link
             href="/dashboard"
             className="rounded-lg border border-zinc-700 px-3 py-1.5 text-xs text-zinc-300 transition-colors hover:border-blue-500 hover:text-white"
           >
@@ -31,7 +52,7 @@ export default function ChatPage() {
 
       {/* Chat area — always show chat, wallet is optional for testing */}
       <main className="mx-auto flex w-full max-w-3xl flex-1 flex-col overflow-hidden">
-        <ChatWindow walletAddress={address} />
+        <ChatWindow walletAddress={address} userProfile={userProfile} />
       </main>
 
       {/* Wallet hint if not connected */}

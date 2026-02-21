@@ -50,9 +50,26 @@ export class WalletControlTool implements AgentTool {
                 };
             }
 
-            // Step 2: Build transaction proposal (actual execution requires user approval)
+            // Step 2: Build execute-tx action if vault configured, else proposal
+            const agentVaultAddress = process.env.AGENT_VAULT_ADDRESS as Address | undefined;
+            if (agentVaultAddress && (action === "deposit" || action === "withdraw")) {
+                const asset = input.asset || "USDC";
+                const amount = input.amount || "0";
+                memory.append(`Wallet control: ${action} execute-tx — score ${score} (approved)`);
+                return {
+                    type: "execute-tx",
+                    action,
+                    contractAddress: agentVaultAddress,
+                    functionName: action,
+                    args: [asset, amount],
+                    reputationScore: Number(score),
+                    description: `${action} ${asset} via LionHeart AgentVault`,
+                    message: `Reputation verified (score: ${score}). Ready to execute **${action}**.\n\n- Asset: ${asset}\n- Protocol: AgentVault\n- Network: Arbitrum Sepolia\n\nClick **Execute** to submit the transaction.`,
+                };
+            }
+
             const txProposal = {
-                type: "Wallet Control",
+                type: "proposal",
                 action,
                 status: "proposed",
                 details: {
@@ -68,9 +85,7 @@ export class WalletControlTool implements AgentTool {
                 timestamp: new Date().toISOString(),
             };
 
-            memory.append(
-                `Wallet control: ${action} proposed — score ${score} (approved)`
-            );
+            memory.append(`Wallet control: ${action} proposed — score ${score} (approved)`);
 
             return txProposal;
         } catch (err: any) {

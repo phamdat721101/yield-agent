@@ -59,7 +59,7 @@ const server = createServer(async (req, res) => {
   if (url.pathname === "/health" && req.method === "GET") {
     json(res, 200, {
       status: "ok",
-      agent: "Yield Sentry",
+      agent: "OpenClaw",
       uptime: process.uptime(),
       timestamp: new Date().toISOString(),
     });
@@ -70,14 +70,14 @@ const server = createServer(async (req, res) => {
   if (url.pathname === "/chat" && req.method === "POST") {
     try {
       const body = JSON.parse(await readBody(req));
-      const { message, walletAddress, agentId } = body;
+      const { message, walletAddress, agentId, userLevel } = body;
 
       if (!message) {
         json(res, 400, { error: "message is required" });
         return;
       }
 
-      const result = await routeMessage(message, { walletAddress, agentId });
+      const result = await routeMessage(message, { walletAddress, agentId, userLevel });
       json(res, 200, result);
     } catch (err: any) {
       console.error("[chat] Error:", err.message);
@@ -132,7 +132,7 @@ wss.on("connection", (ws: WebSocket) => {
     JSON.stringify({
       type: "text",
       content:
-        "Yield Sentry online. I watch stablecoins 24/7 on Arbitrum. Ask about markets, check yields, or get your reality report.",
+        "OpenClaw online. I watch DeFi 24/7 on Arbitrum. Ask about yields, protocols, or register your agent.",
     })
   );
 });

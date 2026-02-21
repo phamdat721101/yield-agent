@@ -175,3 +175,26 @@ export async function GET(request: NextRequest) {
     );
   }
 }
+
+export async function POST(request: NextRequest) {
+  if (!process.env.DATABASE_URL) {
+    return NextResponse.json({ error: "DB not configured" }, { status: 503 });
+  }
+
+  try {
+    const { html, title, wallet } = await request.json();
+    if (!html) {
+      return NextResponse.json({ error: "html is required" }, { status: 400 });
+    }
+    const db = getPool();
+    const result = await db.query(
+      `INSERT INTO saved_dashboards (wallet_addr, title, html_content)
+       VALUES ($1, $2, $3) RETURNING id, title, created_at`,
+      [wallet || null, title || "My Dashboard", html]
+    );
+    return NextResponse.json(result.rows[0]);
+  } catch (err: any) {
+    console.error("[dashboard POST] DB error:", err.message);
+    return NextResponse.json({ error: err.message }, { status: 500 });
+  }
+}

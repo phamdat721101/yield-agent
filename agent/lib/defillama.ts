@@ -39,19 +39,29 @@ export async function fetchProtocolTvl(slug: string): Promise<any> {
   return res.json();
 }
 
+const CEX_CATEGORIES = new Set(["CEX", "Exchange", "Centralized Exchange"]);
+const CEX_NAMES = new Set(["binance", "coinbase", "okx", "kraken", "bybit", "kucoin"]);
+
+function isCex(protocol: Protocol): boolean {
+  return CEX_CATEGORIES.has(protocol.category ?? "") ||
+    CEX_NAMES.has(protocol.name?.toLowerCase() ?? "");
+}
+
 /** Filter protocols by chain name (case-insensitive) */
 export function filterByChain(protocols: Protocol[], chain: string): Protocol[] {
   const lc = chain.toLowerCase();
   return protocols.filter(
     (p) =>
-      p.chain?.toLowerCase() === lc ||
-      (p as any).chains?.some((c: string) => c.toLowerCase() === lc)
+      !isCex(p) && (
+        p.chain?.toLowerCase() === lc ||
+        (p as any).chains?.some((c: string) => c.toLowerCase() === lc)
+      )
   );
 }
 
 /** Get top N protocols sorted by TVL */
 export function topByTvl(protocols: Protocol[], n: number): Protocol[] {
-  return [...protocols].sort((a, b) => b.tvl - a.tvl).slice(0, n);
+  return [...protocols].filter(p => !isCex(p)).sort((a, b) => b.tvl - a.tvl).slice(0, n);
 }
 
 // ── Yields API ──────────────────────────────────────────────────

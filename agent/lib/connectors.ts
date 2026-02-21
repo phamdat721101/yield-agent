@@ -24,7 +24,7 @@ export interface Connector {
 let yieldsCache: { data: YieldPool[]; ts: number } | null = null;
 const CACHE_TTL = 5 * 60 * 1000;
 
-async function getCachedYields(): Promise<YieldPool[]> {
+export async function getCachedYields(): Promise<YieldPool[]> {
   if (yieldsCache && Date.now() - yieldsCache.ts < CACHE_TTL) {
     return yieldsCache.data;
   }
@@ -219,6 +219,29 @@ class DolomiteConnector implements Connector {
   }
 }
 
+// ── 6. Camelot Connector (via DefiLlama yields) ──
+
+class CamelotConnector implements Connector {
+  name = 'camelot';
+
+  async fetch(): Promise<PoolSnapshot[]> {
+    const all = await getCachedYields();
+    return filterYieldsByChain(all, 'Arbitrum')
+      .filter((p) => p.project.toLowerCase().includes('camelot') && p.tvlUsd > 10_000)
+      .map((p) => ({
+        protocol: 'camelot',
+        pool_id: p.pool,
+        pool_name: p.symbol,
+        category: 'dex',
+        tokens: parseTokens(p.symbol),
+        tvl_usd: p.tvlUsd,
+        apy_base: p.apyBase ?? null,
+        apy_reward: p.apyReward ?? null,
+        apy_total: p.apy ?? null,
+      }));
+  }
+}
+
 // ── Deduplication ──
 
 function deduplicatePools(pools: PoolSnapshot[]): PoolSnapshot[] {
@@ -242,6 +265,7 @@ const connectors: Connector[] = [
   new GmxConnector(),
   new PendleConnector(),
   new DolomiteConnector(),
+  new CamelotConnector(),
 ];
 
 export async function runAllConnectors(): Promise<PoolSnapshot[]> {

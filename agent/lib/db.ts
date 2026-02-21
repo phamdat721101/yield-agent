@@ -90,6 +90,37 @@ export const db = {
       `);
             await pool.query(`CREATE INDEX IF NOT EXISTS idx_pt_wallet ON portfolio_tracking(wallet_address);`);
 
+            // 7. Agent Profiles Table (per wallet)
+            await pool.query(`
+        CREATE TABLE IF NOT EXISTS agent_profiles (
+          id           UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+          wallet_addr  TEXT NOT NULL UNIQUE,
+          user_level   TEXT NOT NULL DEFAULT 'intermediate',
+          agent_style  TEXT NOT NULL DEFAULT 'yield_sentry',
+          risk_tolerance TEXT NOT NULL DEFAULT 'moderate',
+          focus_assets TEXT[] NOT NULL DEFAULT ARRAY['USDC','USDT'],
+          min_apy_threshold NUMERIC NOT NULL DEFAULT 1.5,
+          whitelisted_protocols TEXT[] NOT NULL DEFAULT ARRAY['aave-v3','dolomite','pendle'],
+          agent_token_id INTEGER,
+          created_at   TIMESTAMP DEFAULT NOW(),
+          updated_at   TIMESTAMP DEFAULT NOW()
+        );
+      `);
+            await pool.query(`
+        ALTER TABLE agent_profiles ADD COLUMN IF NOT EXISTS agent_token_id INTEGER;
+      `);
+
+            // 8. Saved Dashboards Table
+            await pool.query(`
+        CREATE TABLE IF NOT EXISTS saved_dashboards (
+          id           UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+          wallet_addr  TEXT,
+          title        TEXT NOT NULL,
+          html_content TEXT NOT NULL,
+          created_at   TIMESTAMP DEFAULT NOW()
+        );
+      `);
+
             console.log('Database initialized');
         } catch (err) {
             console.error('Database init failed:', err);
@@ -197,6 +228,71 @@ export const db = {
              VALUES ($1, $2, $3, $4, $5, $6) RETURNING *`,
             [action.wallet_address, action.protocol, action.pool_id, action.action, action.amount_usd, action.apy_at_entry ?? null]
         );
+    },
+
+    saveProfile: async (profile: {
+        wallet_addr: string; user_level: string; agent_style: string;
+        risk_tolerance: string; focus_assets: string[];
+        min_apy_threshold: number; whitelisted_protocols: string[];
+        agent_token_id?: number | null;
+    }) => {
+        return pool.query(
+            `INSERT INTO agent_profiles (wallet_addr, user_level, agent_style, risk_tolerance, focus_assets, min_apy_threshold, whitelisted_protocols, agent_token_id, updated_at)
+             VALUES ($1, $2, $3, $4, $5, $6, $7, $8, NOW())
+             ON CONFLICT (wallet_addr) DO UPDATE SET
+               user_level = EXCLUDED.user_level,
+               agent_style = EXCLUDED.agent_style,
+               risk_tolerance = EXCLUDED.risk_tolerance,
+               focus_assets = EXCLUDED.focus_assets,
+               min_apy_threshold = EXCLUDED.min_apy_threshold,
+               whitelisted_protocols = EXCLUDED.whitelisted_protocols,
+               agent_token_id = COALESCE(EXCLUDED.agent_token_id, agent_profiles.agent_token_id),
+               updated_at = NOW()
+             RETURNING *`,
+            [profile.wallet_addr, profile.user_level, profile.agent_style,
+             profile.risk_tolerance, profile.focus_assets,
+             profile.min_apy_threshold, profile.whitelisted_protocols,
+             profile.agent_token_id ?? null]
+        );
+    },
+
+    getProfile: async (wallet_addr: string) => {
+        const result = await pool.query(
+            'SELECT * FROM agent_profiles WHERE wallet_addr = $1',
+            [wallet_addr]
+        );
+        return result.rows[0] || null;
+    },
+
+    saveDashboard: async (wallet_addr: string | null, title: string, html: string) => {
+        const result = await pool.query(
+            `INSERT INTO saved_dashboards (wallet_addr, title, html_content)
+             VALUES ($1, $2, $3) RETURNING id, title, created_at`,
+            [wallet_addr, title, html]
+        );
+        return result.rows[0];
+    },
+
+    getDashboards: async (wallet_addr: string | null) => {
+        const result = await pool.query(
+            `SELECT id, wallet_addr, title, created_at FROM saved_dashboards
+             WHERE wallet_addr IS NOT DISTINCT FROM $1
+             ORDER BY created_at DESC`,
+            [wallet_addr]
+        );
+        return result.rows;
+    },
+
+    deleteDashboard: async (id: string) => {
+        await pool.query('DELETE FROM saved_dashboards WHERE id = $1', [id]);
+    },
+
+    getDashboardById: async (id: string) => {
+        const result = await pool.query(
+            'SELECT * FROM saved_dashboards WHERE id = $1',
+            [id]
+        );
+        return result.rows[0] || null;
     },
 
     getPortfolioPnL: async (wallet: string) => {

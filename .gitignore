@@ -44,3 +44,4 @@ npm-debug.log*
 .cursorrules
 nim-10.pem
 defi_integrate.pdf
+docs/*

@@ -33,8 +33,18 @@ function mockResponse(content: string): string {
   return `I'm OpenClaw, your DeFi mentor. Try:\n\n- "Top 5 Arbitrum protocols"\n- "Teach me about DeFi"\n- "Give me today's brief"`;
 }
 
-export function useAgent(walletAddress?: string) {
-  const [messages, setMessages] = useState<ChatMessage[]>([]);
+export function useAgent(walletAddress?: string, userLevel?: string) {
+  const [messages, setMessages] = useState<ChatMessage[]>(() => {
+    if (typeof window === "undefined") return [];
+    try {
+      const raw = localStorage.getItem("chat_history");
+      if (!raw) return [];
+      return JSON.parse(raw).map((m: any) => ({
+        ...m,
+        timestamp: new Date(m.timestamp),
+      }));
+    } catch { return []; }
+  });
   const [isConnected, setIsConnected] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
   const connRef = useRef<ReturnType<typeof createOpenClawConnection> | null>(
@@ -47,16 +57,22 @@ export function useAgent(walletAddress?: string) {
       content: string,
       metadata?: Record<string, unknown>
     ) => {
-      setMessages((prev) => [
-        ...prev,
-        {
-          id: `${Date.now()}-${Math.random().toString(36).slice(2)}`,
-          role,
-          content,
-          timestamp: new Date(),
-          metadata,
-        },
-      ]);
+      setMessages((prev) => {
+        const next = [
+          ...prev,
+          {
+            id: `${Date.now()}-${Math.random().toString(36).slice(2)}`,
+            role,
+            content,
+            timestamp: new Date(),
+            metadata,
+          },
+        ];
+        if (typeof window !== "undefined") {
+          localStorage.setItem("chat_history", JSON.stringify(next.slice(-50)));
+        }
+        return next;
+      });
     },
     []
   );
@@ -97,7 +113,7 @@ export function useAgent(walletAddress?: string) {
           const res = await fetch("/api/agent", {
             method: "POST",
             headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({ message: content, walletAddress }),
+            body: JSON.stringify({ message: content, walletAddress, userLevel }),
           });
           const data = await res.json();
           addMessage("agent", data.response || data.error, data.metadata);
@@ -116,7 +132,7 @@ export function useAgent(walletAddress?: string) {
         walletAddress,
       });
     },
-    [addMessage, walletAddress]
+    [addMessage, walletAddress, userLevel]
   );
 
   const disconnect = useCallback(() => {

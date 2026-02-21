@@ -110,6 +110,7 @@ Next.js App Router with two main pages:
 - Reputation-gated trading: agent needs score >= 100 to execute trades
 - Data verifiability: all research data includes SHA-256 hash, optionally signed + pinned to IPFS
 - Target chain: Arbitrum Sepolia (chainId 421614)
+- Per-user agent NFT: Each user mints their own ERC-8004 NFT via chat ("register my agent") or the onboarding launch button. The register-agent skill builds an inline data URI from the user's profile and returns a { type: "mint-erc8004" } action. MessageBubble renders a "Confirm Registration" button that calls IdentityRegistry.register(agentURI) via wagmi. Token ID stored in agent_profiles.agent_token_id.
 
 ## Environment Variables
 
