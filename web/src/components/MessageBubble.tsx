@@ -8,6 +8,7 @@ import { config } from "@/lib/wagmi-config";
 import { IDENTITY_REGISTRY_ADDRESS, IDENTITY_REGISTRY_ABI } from "@/lib/contracts";
 import type { ChatMessage } from "@/hooks/useAgent";
 import ReactMarkdown from "react-markdown";
+import { StrategyArtifact } from "./StrategyArtifact";
 import remarkGfm from "remark-gfm";
 
 export function MessageBubble({
@@ -32,6 +33,9 @@ export function MessageBubble({
 
   const isExecuteTx = !isUser && (message.metadata?.tool_result as any)?.type === "execute-tx";
   const executeTxData = (message.metadata?.tool_result as any);
+
+  const isStrategyArtifact = !isUser && (message.metadata?.tool_result as any)?.type === "strategy-artifact";
+  const strategyData = (message.metadata?.tool_result as any)?.strategy;
 
   const handleMint = async () => {
     if (!mintAgentURI || !walletAddress) return;
@@ -74,7 +78,7 @@ export function MessageBubble({
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ wallet_addr: walletAddress, agent_token_id: mintedTokenId }),
-      }).catch(() => {});
+      }).catch(() => { });
     } catch (err: any) {
       setMintError(err.shortMessage || err.message || "Transaction rejected");
       setMintState("error");
@@ -167,11 +171,10 @@ export function MessageBubble({
   return (
     <div className={`flex ${isUser ? "justify-end" : "justify-start"}`}>
       <div
-        className={`max-w-[80%] rounded-2xl px-4 py-3 text-sm leading-relaxed ${
-          isUser
-            ? "bg-blue-600 text-white rounded-br-md"
-            : "bg-zinc-800 text-zinc-100 rounded-bl-md"
-        }`}
+        className={`max-w-[80%] rounded-2xl px-4 py-3 text-sm leading-relaxed ${isUser
+          ? "bg-blue-600 text-white rounded-br-md"
+          : "bg-zinc-800 text-zinc-100 rounded-bl-md"
+          }`}
       >
         {!isUser && (
           <div className="mb-1 text-[10px] font-semibold uppercase tracking-wider text-zinc-400">
@@ -216,6 +219,9 @@ export function MessageBubble({
             <div className="text-xs text-red-400">{mintError || "Registration failed or cancelled."}</div>
             <button onClick={handleMint} className="text-xs text-zinc-400 underline">Try again</button>
           </div>
+        )}
+        {isStrategyArtifact && strategyData && (
+          <StrategyArtifact strategy={strategyData} />
         )}
         {isExecuteTx && execState === "idle" && (
           <button

@@ -45,3 +45,5 @@ npm-debug.log*
 nim-10.pem
 defi_integrate.pdf
 docs/*
+stylus/target/*
+stylus/key.txt

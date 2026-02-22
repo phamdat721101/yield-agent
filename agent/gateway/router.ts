@@ -125,9 +125,10 @@ function parseInput(message: string, context?: Context): Record<string, any> {
 }
 
 /** Use Gemini to format raw tool output into readable text.
- *  If result is an HTML dashboard or mint action, pass message through unchanged. */
+ *  If result is an HTML dashboard, mint action, or strategy artifact, pass through. */
 async function formatToolResponse(toolName: string, result: any, userMessage: string): Promise<string> {
   if (result?.type === "html") return result.content;
+  if (result?.type === "strategy-artifact") return result.message || JSON.stringify(result);
   if (result?.type === "mint-erc8004") return result.message;
   const recentMemory = memory.read().split("\n").slice(-15).join("\n");
   try {
@@ -148,7 +149,16 @@ PROTOCOL KNOWLEDGE:
 - GMX V2: Perps DEX, GM pools 15–30% from trading fees, delta exposure to trader PnL. Red tier.
 - Jones DAO: Leveraged yield vaults on Arbitrum, advanced strategies, 8–25%. Red tier.
 
-RISK TIERS: Green = audited, >$100M TVL, stablecoins. Yellow = medium TVL, IL or token emission risk. Red = high leverage, volatile, algorithmic depeg risk.
+RISK TIERS & SCORING: Green (0–30) = audited, >$100M TVL, stablecoins. Yellow (31–60) = medium TVL, IL or token emission risk. Red (61–100) = high leverage, volatile, algorithmic depeg risk.
+ALWAYS assign a numeric riskScore (0–100) and a riskTier (green/yellow/red) to every recommendation.
+
+ON-CHAIN VERIFICATION (Arbitrum Stylus):
+- Risk scores are verified on-chain via the YieldRouter Stylus contract (Rust/WASM) deployed on Arbitrum Sepolia.
+- The score_pool() function calculates risk based on TVL, audit count, APY source, and historical volatility.
+
+x402 MICROPAYMENTS:
+- Premium data from external agents (risk audits, MEV protection) is paid via the x402 HTTP protocol with USDC micropayments on Arbitrum Sepolia.
+- When referencing premium data, mention the x402 cost (e.g., "Risk audit by Agent X — 0.05 USDC via x402").
 
 ARB INCENTIVE CONTEXT:
 - ARB STIP (Short-Term Incentive Program) ran Oct 2023–Mar 2024. Yields inflated by 2–15% during STIP. Post-STIP yields dropped 30–60% on affected protocols (Radiant, Camelot, GMX). Flag any yield that looks anomalously high and may be subsidy-driven vs organic fee revenue.
@@ -280,18 +290,27 @@ ADVANCED YIELD FARMING MECHANICS:
 - **Flash Loan Arbitrage & MEV**: Concept of atomically capturing spreads across DEXes (e.g., Uniswap vs Camelot) risk-free minus gas.
 - **Pendle PT vs YT deep dive**: PT = you buy at discount (e.g., 0.92 USDC per 1 USDC PT), receive 1 USDC at maturity = implied fixed APY. YT = you pay for the yield stream only — leveraged bet on yield going UP. If yields drop, YT value approaches zero.
 
-RISK FRAMEWORK:
-- **Green** (Safe): Audited 3+ times, >$100M TVL, battle-tested, primarily stablecoins. Example: Aave V3, Fluid Protocol.
-- **Yellow** (Medium): Audited, $10M-$100M TVL, moderate IL, or specific token emission dependency. Example: Pendle, Curve, Silo Finance.
-- **Red** (High): <$10M TVL, highly leveraged, algorithmic or extreme counterparty risk. Example: degen farms, unpegged assets.
+RISK FRAMEWORK & SCORING:
+- **Green** (0–30): Audited 3+ times, >$100M TVL, battle-tested, primarily stablecoins. Example: Aave V3, Fluid Protocol.
+- **Yellow** (31–60): Audited, $10M-$100M TVL, moderate IL, or specific token emission dependency. Example: Pendle, Curve, Silo Finance.
+- **Red** (61–100): <$10M TVL, highly leveraged, algorithmic or extreme counterparty risk. Example: degen farms, unpegged assets.
 - **Master Checks**: Smart contract audits, oracle manipulation vectors (Chainlink vs TWAP), peg stability mechanisms, admin multisig control.
+- ALWAYS assign a numeric riskScore (0–100) and riskTier (green/yellow/red) to every recommendation.
+
+ON-CHAIN VERIFICATION (Arbitrum Stylus):
+- Risk scores are computed on-chain via the YieldRouter Stylus contract (Rust/WASM) deployed on Arbitrum Sepolia.
+- Reference this when discussing strategy safety: "Risk score verified on-chain via Stylus YieldRouter."
+
+x402 MICROPAYMENTS:
+- Premium skill data (risk audits, MEV protection, advanced analytics) is paid via the x402 HTTP protocol using USDC micropayments on Arbitrum Sepolia.
+- When referencing premium data, mention the x402 cost (e.g., "Risk audit by Agent X — 0.05 USDC via x402").
 
 ARB INCENTIVE CONTEXT:
 - ARB STIP ran Oct 2023–Mar 2024. Many protocols saw 2–15% APY boost from ARB rewards. Post-STIP, yields dropped 30–60% (Radiant −40%, Camelot −35%, GMX −20%). Always flag: "X% includes Y% ARB subsidy — organic base is Z%."
 - Subsidy yield = inflationary token emissions (RDNT, GRAIL, ARB). Organic yield = trading fees + lending utilization interest.
 
 TESTNET CONTEXT:
-- LionHeart runs on Arbitrum Sepolia (chainId 421614, testnet). Real mainnet Arbitrum protocols (Aave, Pendle, Camelot) are NOT on testnet. DefiLlama data reflects mainnet Arbitrum — use it for real-world analysis and education. For on-chain actions, only LionHeart's testnet contracts (IdentityRegistry, ReputationRegistry, AgentVault) exist.
+- LionHeart runs on Arbitrum Sepolia (chainId 421614, testnet). Real mainnet Arbitrum protocols (Aave, Pendle, Camelot) are NOT on testnet. DefiLlama data reflects mainnet Arbitrum — use it for real-world analysis and education. For on-chain actions, LionHeart's testnet contracts (IdentityRegistry, ReputationRegistry, AgentVault, YieldRouter via Stylus) exist.
 
 WHEN TO USE WHICH PROTOCOL:
 - Idle stables → Aave V3, Morpho, or Fluid Protocol (risk-averse yield, Green tier).
