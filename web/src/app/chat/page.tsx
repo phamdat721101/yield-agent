@@ -7,6 +7,7 @@ import { ChatWindow } from "@/components/ChatWindow";
 import { WalletConnect } from "@/components/WalletConnect";
 import { useWallet } from "@/hooks/useWallet";
 import { usePrivy } from "@privy-io/react-auth";
+import { AgentStatusCard } from "@/components/AgentStatusCard";
 import type { UserProfile } from "@/components/OnboardingFlow";
 
 export default function ChatPage() {
@@ -20,6 +21,7 @@ export default function ChatPage() {
   useEffect(() => {
     if (prevAuth.current && !authenticated) {
       localStorage.removeItem("userProfile");
+      localStorage.removeItem("chat_history");
       router.push("/");
     }
     prevAuth.current = authenticated;
@@ -46,8 +48,15 @@ export default function ChatPage() {
             L
           </div>
           <span className="text-sm font-semibold text-white">LionHeart</span>
+          {address && <AgentStatusCard walletAddress={address} />}
         </div>
         <div className="flex items-center gap-3">
+          <Link
+            href="/profile"
+            className="rounded-lg border border-zinc-700 px-3 py-1.5 text-xs text-zinc-300 transition-colors hover:border-blue-500 hover:text-white"
+          >
+            Profile
+          </Link>
           <Link
             href="/dashboards"
             className="rounded-lg border border-zinc-700 px-3 py-1.5 text-xs text-zinc-300 transition-colors hover:border-blue-500 hover:text-white"

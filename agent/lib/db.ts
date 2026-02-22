@@ -121,6 +121,22 @@ export const db = {
         );
       `);
 
+            // 9. Chat Messages Table (per-wallet, DB-backed persistence)
+            await pool.query(`
+        CREATE TABLE IF NOT EXISTS chat_messages (
+          id          UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+          wallet_addr TEXT NOT NULL,
+          role        TEXT NOT NULL CHECK (role IN ('user', 'agent')),
+          content     TEXT NOT NULL,
+          metadata    JSONB,
+          created_at  TIMESTAMP DEFAULT NOW()
+        );
+      `);
+            await pool.query(`
+        CREATE INDEX IF NOT EXISTS idx_chat_messages_wallet
+          ON chat_messages(wallet_addr, created_at DESC);
+      `);
+
             console.log('Database initialized');
         } catch (err) {
             console.error('Database init failed:', err);
@@ -293,6 +309,13 @@ export const db = {
             [id]
         );
         return result.rows[0] || null;
+    },
+
+    clearTokenId: async (wallet_addr: string) => {
+        return pool.query(
+            'UPDATE agent_profiles SET agent_token_id = NULL, updated_at = NOW() WHERE wallet_addr = $1',
+            [wallet_addr]
+        );
     },
 
     getPortfolioPnL: async (wallet: string) => {

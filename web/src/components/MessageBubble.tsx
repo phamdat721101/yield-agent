@@ -2,6 +2,9 @@
 
 import { useState } from "react";
 import { useWriteContract } from "wagmi";
+import { waitForTransactionReceipt } from "@wagmi/core";
+import { decodeEventLog } from "viem";
+import { config } from "@/lib/wagmi-config";
 import { IDENTITY_REGISTRY_ADDRESS, IDENTITY_REGISTRY_ABI } from "@/lib/contracts";
 import type { ChatMessage } from "@/hooks/useAgent";
 import ReactMarkdown from "react-markdown";
@@ -46,13 +49,31 @@ export function MessageBubble({
         functionName: "register",
         args: [mintAgentURI],
       });
+      // Extract token ID from Transfer event
+      let mintedTokenId: number | null = null;
+      try {
+        const receipt = await waitForTransactionReceipt(config, { hash });
+        for (const log of receipt.logs) {
+          try {
+            const decoded = decodeEventLog({
+              abi: IDENTITY_REGISTRY_ABI,
+              data: log.data,
+              topics: log.topics,
+            });
+            if (decoded.eventName === "Transfer" && (decoded.args as any).to === walletAddress) {
+              mintedTokenId = Number((decoded.args as any).tokenId);
+              break;
+            }
+          } catch { /* skip non-matching logs */ }
+        }
+      } catch { /* receipt parse failure is non-fatal */ }
       setMintTxHash(hash);
-      setMintTokenId(null);
+      setMintTokenId(mintedTokenId);
       setMintState("done");
       await fetch("/api/onboarding", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ wallet_addr: walletAddress }),
+        body: JSON.stringify({ wallet_addr: walletAddress, agent_token_id: mintedTokenId }),
       }).catch(() => {});
     } catch (err: any) {
       setMintError(err.shortMessage || err.message || "Transaction rejected");

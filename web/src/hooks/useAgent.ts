@@ -50,6 +50,32 @@ export function useAgent(walletAddress?: string, userLevel?: string) {
   const connRef = useRef<ReturnType<typeof createOpenClawConnection> | null>(
     null
   );
+  const dbLoadedRef = useRef(false);
+
+  // Seed messages from DB when wallet connects (runs once per session)
+  useEffect(() => {
+    if (!walletAddress || dbLoadedRef.current) return;
+    dbLoadedRef.current = true;
+    fetch(`/api/chat?wallet=${walletAddress}&limit=50`)
+      .then((r) => r.json())
+      .then((data) => {
+        if (data.messages?.length > 0) {
+          const dbMsgs: ChatMessage[] = data.messages.map((m: any) => ({
+            id: m.id,
+            role: m.role,
+            content: m.content,
+            timestamp: new Date(m.created_at),
+            metadata: m.metadata || undefined,
+          }));
+          setMessages(dbMsgs);
+          // Keep localStorage in sync for page-refresh resilience
+          if (typeof window !== "undefined") {
+            localStorage.setItem("chat_history", JSON.stringify(dbMsgs.slice(-50)));
+          }
+        }
+      })
+      .catch(() => {}); // non-fatal: keep existing localStorage messages
+  }, [walletAddress]);
 
   const addMessage = useCallback(
     (
@@ -68,13 +94,22 @@ export function useAgent(walletAddress?: string, userLevel?: string) {
             metadata,
           },
         ];
-        if (typeof window !== "undefined") {
+        // Only persist to localStorage in unauthenticated (no wallet) mode
+        if (typeof window !== "undefined" && !walletAddress) {
           localStorage.setItem("chat_history", JSON.stringify(next.slice(-50)));
         }
         return next;
       });
+      // Fire-and-forget DB save when wallet is connected
+      if (walletAddress) {
+        fetch("/api/chat", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ wallet_addr: walletAddress, role, content, metadata: metadata || null }),
+        }).catch(() => {});
+      }
     },
-    []
+    [walletAddress]
   );
 
   const connect = useCallback(() => {

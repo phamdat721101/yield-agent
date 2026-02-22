@@ -1,5 +1,9 @@
 import { AgentTool } from "../lib/tools.js";
 import { db } from "../lib/db.js";
+import { getBalanceOf, getTokenIdForOwner } from "../lib/erc8004-client.js";
+import type { Address } from "viem";
+
+const IDENTITY_ADDRESS = (process.env.IDENTITY_REGISTRY_ADDRESS || "") as Address;
 
 export class RegisterAgentTool implements AgentTool {
   name = "register-agent";
@@ -10,17 +14,50 @@ export class RegisterAgentTool implements AgentTool {
     if (!walletAddr) {
       return { type: "text", message: "Connect your wallet first to register your agent on-chain." };
     }
+    if (!IDENTITY_ADDRESS || IDENTITY_ADDRESS === "0x0000000000000000000000000000000000000000") {
+      return { type: "text", message: "Identity Registry contract not configured on this server." };
+    }
 
-    const profile = await db.getProfile(walletAddr);
+    // Step 1: On-chain truth (authoritative source)
+    let onChainBalance = 0n;
+    try {
+      onChainBalance = await getBalanceOf(IDENTITY_ADDRESS, walletAddr as Address);
+    } catch (err: any) {
+      console.warn("[register-agent] balanceOf RPC failed — falling back to DB:", err.message);
+    }
 
-    // Already minted — inform user
-    if (profile?.agent_token_id) {
+    if (onChainBalance > 0n) {
+      // Wallet has NFT on-chain. Try to recover token ID for a friendly message.
+      let tokenId: number | null = null;
+      try {
+        tokenId = await getTokenIdForOwner(IDENTITY_ADDRESS, walletAddr as Address);
+      } catch { /* non-fatal */ }
+
+      // Sync DB if it still has null (on-chain minted but DB missed it)
+      if (tokenId) {
+        const profile = await db.getProfile(walletAddr).catch(() => null);
+        if (profile && !profile.agent_token_id) {
+          await db.saveProfile({ ...profile, agent_token_id: tokenId }).catch(() => {});
+        }
+      }
+
       return {
         type: "text",
-        message: `Your agent is already registered as **Agent #${profile.agent_token_id}** on Arbitrum Sepolia. No need to mint again!`,
+        message: tokenId
+          ? `Your agent is already registered as **Agent #${tokenId}** on Arbitrum Sepolia. No need to mint again!`
+          : `Your agent is already registered on Arbitrum Sepolia. No need to mint again!`,
       };
     }
 
+    // Step 2: On-chain balance = 0. Check DB for stale token_id.
+    const profile = await db.getProfile(walletAddr);
+    if (profile?.agent_token_id) {
+      // Stale DB entry: on-chain has no NFT, DB thinks one exists. Clear it.
+      console.log(`[register-agent] Clearing stale token_id ${profile.agent_token_id} for ${walletAddr}`);
+      await db.clearTokenId(walletAddr).catch(() => {});
+    }
+
+    // Step 3: No NFT on-chain — build and return mint action
     const agentCard = {
       name: `${profile?.agent_style || "yield_sentry"} Agent`,
       level: profile?.user_level || "intermediate",

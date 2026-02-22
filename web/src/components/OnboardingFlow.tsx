@@ -91,13 +91,14 @@ export function OnboardingFlow({
         args: [agentURI],
         account: address as `0x${string}`,
       });
-      tokenId = Number(result);
+      const simulatedId = Number(result);
       await writeContractAsync({
         address: IDENTITY_REGISTRY_ADDRESS,
         abi: IDENTITY_REGISTRY_ABI,
         functionName: "register",
         args: [agentURI],
       });
+      tokenId = simulatedId; // only set after confirmed write
     } catch (err: any) {
       console.warn("[onboarding] mint skipped:", err.message);
       // Non-fatal — user can mint later via chat

@@ -21,6 +21,8 @@ const IDENTITY_ABI = parseAbi([
   "function getAgentWallet(uint256 agentId) external view returns (address)",
   "function totalAgents() external view returns (uint256)",
   "function ownerOf(uint256 tokenId) external view returns (address)",
+  "function balanceOf(address owner) external view returns (uint256)",
+  "event AgentRegistered(uint256 indexed agentId, address indexed owner, string agentURI)",
 ]);
 
 const REPUTATION_ABI = parseAbi([
@@ -162,4 +164,41 @@ export async function giveFeedback(
     functionName: "giveFeedback",
     args: [agentId, value, decimals, tag1, tag2, endpointURI, payloadHash],
   });
+}
+
+export async function getBalanceOf(
+  identityAddress: Address,
+  ownerAddress: Address,
+  rpcUrl?: string
+): Promise<bigint> {
+  const client = getPublicClient(rpcUrl);
+  return client.readContract({
+    address: identityAddress,
+    abi: IDENTITY_ABI,
+    functionName: "balanceOf",
+    args: [ownerAddress],
+  }) as Promise<bigint>;
+}
+
+// Returns the most recently minted token ID for ownerAddress, or null.
+// Uses AgentRegistered event logs — no ERC-721Enumerable needed.
+export async function getTokenIdForOwner(
+  identityAddress: Address,
+  ownerAddress: Address,
+  rpcUrl?: string
+): Promise<number | null> {
+  const client = getPublicClient(rpcUrl);
+  try {
+    const logs = await client.getContractEvents({
+      address: identityAddress,
+      abi: IDENTITY_ABI,
+      eventName: "AgentRegistered",
+      args: { owner: ownerAddress },
+      fromBlock: 0n,
+    });
+    if (logs.length === 0) return null;
+    return Number((logs[logs.length - 1].args as any).agentId);
+  } catch {
+    return null;
+  }
 }
