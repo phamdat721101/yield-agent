@@ -1,11 +1,12 @@
 "use client";
 
-import { getDefaultConfig } from "@rainbow-me/rainbowkit";
+import { createConfig } from "@privy-io/wagmi";
 import { arbitrumSepolia } from "wagmi/chains";
+import { http } from "wagmi";
 
-export const config = getDefaultConfig({
-  appName: "LionHeart",
-  projectId: process.env.NEXT_PUBLIC_WALLETCONNECT_PROJECT_ID || "demo",
+export const config = createConfig({
   chains: [arbitrumSepolia],
-  ssr: true,
+  transports: {
+    [arbitrumSepolia.id]: http(),
+  },
 });

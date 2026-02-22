@@ -1,15 +1,29 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
+import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { ChatWindow } from "@/components/ChatWindow";
 import { WalletConnect } from "@/components/WalletConnect";
 import { useWallet } from "@/hooks/useWallet";
+import { usePrivy } from "@privy-io/react-auth";
 import type { UserProfile } from "@/components/OnboardingFlow";
 
 export default function ChatPage() {
+  const router = useRouter();
   const { address, isConnected } = useWallet();
+  const { authenticated } = usePrivy();
+  const prevAuth = useRef(false);
   const [userProfile, setUserProfile] = useState<UserProfile | null>(null);
+
+  // Redirect to home when user logs out
+  useEffect(() => {
+    if (prevAuth.current && !authenticated) {
+      localStorage.removeItem("userProfile");
+      router.push("/");
+    }
+    prevAuth.current = authenticated;
+  }, [authenticated, router]);
 
   useEffect(() => {
     if (typeof window === "undefined") return;

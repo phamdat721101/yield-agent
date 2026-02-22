@@ -19,6 +19,7 @@ export function MessageBubble({
   const [saving, setSaving] = useState(false);
   const [mintState, setMintState] = useState<"idle" | "pending" | "done" | "error">("idle");
   const [mintTokenId, setMintTokenId] = useState<number | null>(null);
+  const [mintTxHash, setMintTxHash] = useState<string | null>(null);
   const [mintError, setMintError] = useState("");
   const [execState, setExecState] = useState<"idle" | "pending" | "done" | "error">("idle");
   const { writeContractAsync } = useWriteContract();
@@ -39,12 +40,13 @@ export function MessageBubble({
     setMintState("pending");
     setMintError("");
     try {
-      await writeContractAsync({
+      const hash = await writeContractAsync({
         address: IDENTITY_REGISTRY_ADDRESS,
         abi: IDENTITY_REGISTRY_ABI,
         functionName: "register",
         args: [mintAgentURI],
       });
+      setMintTxHash(hash);
       setMintTokenId(null);
       setMintState("done");
       await fetch("/api/onboarding", {
@@ -174,8 +176,18 @@ export function MessageBubble({
           <div className="mt-3 text-xs text-zinc-400">Registering on-chain...</div>
         )}
         {isMintAction && mintState === "done" && (
-          <div className="mt-3 text-xs text-green-400">
-            Agent registered! Token ID: #{mintTokenId}
+          <div className="mt-3 space-y-1">
+            <div className="text-xs text-green-400">Agent registered!</div>
+            {mintTxHash && (
+              <a
+                href={`https://sepolia.arbiscan.io/tx/${mintTxHash}`}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="text-xs text-blue-400 underline break-all"
+              >
+                View on Arbiscan: {mintTxHash.slice(0, 10)}...{mintTxHash.slice(-6)} →
+              </a>
+            )}
           </div>
         )}
         {isMintAction && mintState === "error" && (
